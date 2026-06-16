@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environments and Secrets
+.env
+.env.local
+.env.*.local
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# WhatsApp Session / Baileys Authentication Data
+*auth*
+*session*
+baileys_auth_info/
+session/
+auth_info_multi_device/
