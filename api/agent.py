@@ -1,5 +1,7 @@
 from openai import OpenAI
 from dotenv import load_dotenv
+from db import qdrant_client
+from qdrant_client.models import PointStruct
 import json
 
 load_dotenv()
@@ -7,31 +9,57 @@ load_dotenv()
 client = OpenAI()
 
 
-def save_link(url, description, category):
+def save_link(url, title, description, category):
+    text_to_embed = f"""
+    Title: {title}
+    Description: {description}
+    Category: {category}
+    URL: {url}
+    """
     try:
-        with open("links.json", "r") as f:
-            data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        data = []
+        response = client.embeddings.create(
+            input=text_to_embed,
+            model="text-embedding-3-small"
+        )
 
-    data.append({
-        "url": url,
-        "description": description,
-        "category": category
-    })
+        vector = response.data[0].embedding
 
-    with open("links.json", "w") as f:
-        json.dump(data, f, indent=2)
-
-    return "Link saved successfully"
+        qdrant_client.upsert(
+            collection_name="links",
+            points=[
+                PointStruct(
+                    id=1,
+                    vector=vector,
+                    payload={
+                        "url": url,
+                        "title": title,
+                        "description": description,
+                        "category": category
+                    }
+                )
+            ]
+        )
+        return "Link saved successfully"
+    except Exception as e:
+        return str(e)
 
 
 def search_links(query):
     try:
-        with open("links.json", "r") as f:
-            data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return "[]"
+        response = client.embeddings.create(
+            input= query,
+            model="text-embedding-3-small"
+        )
+
+        query_vector = response.data[0].embedding
+
+        data = qdrant_client.query_points(
+            collection_name="links",
+            query=query_vector,
+            limit=3
+        )
+    except Exception as e:
+        return str(e)
 
     matches = []
 
@@ -52,11 +80,13 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "url": {"type": "string"},
+                    "title": {"type":"string"},
                     "description": {"type": "string"},
                     "category": {"type": "string"}
                 },
                 "required": [
                     "url",
+                    "title",
                     "description",
                     "category"
                 ]
@@ -130,6 +160,7 @@ def process_message(user_message: str) -> str:
             if name == "save_link":
                 result = save_link(
                     args["url"],
+                    args["title"],
                     args["description"],
                     args["category"]
                 )
