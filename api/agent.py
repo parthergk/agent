@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from db import qdrant_client
 from qdrant_client.models import PointStruct
 import json
+import uuid
 
 load_dotenv()
 
@@ -28,7 +29,7 @@ def save_link(url, title, description, category):
             collection_name="links",
             points=[
                 PointStruct(
-                    id=1,
+                    id=str(uuid.uuid4()),
                     vector=vector,
                     payload={
                         "url": url,
@@ -47,27 +48,31 @@ def save_link(url, title, description, category):
 def search_links(query):
     try:
         response = client.embeddings.create(
-            input= query,
+            input=query,
             model="text-embedding-3-small"
         )
 
         query_vector = response.data[0].embedding
 
-        data = qdrant_client.query_points(
+        results = qdrant_client.query_points(
             collection_name="links",
             query=query_vector,
-            limit=3
+            limit=2
         )
+        matches = []
+        for point in results.points:
+            matches.append({
+                "score": point.score,
+                "url": point.payload["url"],
+                "title": point.payload["title"],
+                "description": point.payload["description"],
+                "category": point.payload["category"]
+                })
+
+        return json.dumps(matches)
+
     except Exception as e:
         return str(e)
-
-    matches = []
-
-    for item in data:
-        if query.lower() in json.dumps(item).lower():
-            matches.append(item)
-
-    return json.dumps(matches)
 
 
 TOOLS = [
@@ -113,13 +118,20 @@ TOOLS = [
 SYSTEM_PROMPT = """
 You are a Personal Link Memory Agent.
 
-You help users save and retrieve links.
+Use save_link to save links.
+Use search_links to retrieve links.
 
-Rules:
-- Use save_link whenever a link should be saved.
-- Use search_links whenever links need to be searched.
-- Never invent saved links.
-- Always rely on tool outputs.
+Never invent links.
+Always rely on tool results.
+
+When search_links returns multiple results:
+- Consider title, description, category, score, and user intent.
+- Do not choose solely based on score.
+- The highest score is not always the correct result.
+- Prefer the result that best matches the user's request.
+- Return a single link when one result is clearly the best match.
+- Return multiple links only when there is genuine ambiguity.
+- If no relevant result exists, clearly say so.
 """
 
 
