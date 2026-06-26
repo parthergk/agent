@@ -83,6 +83,8 @@ async function connect() {
 
             // ONLY process messages sent by YOU
             if (!msg.key.fromMe) return;
+            const myJid = sock.user?.id ? sock.user.id.replace(/:.*@/, "@") : "";
+            if (msg.key.remoteJid !== myJid) return;
 
             const text =
                 msg.message?.conversation ||
@@ -102,7 +104,9 @@ async function connect() {
 
             // const response =
             //     `Agent received: ${text}`;
+            if (msg.key.fromMe) {
 
+            }
             await sock.sendMessage(chatId, {
                 text: response
             });
