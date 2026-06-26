@@ -83,8 +83,10 @@ async function connect() {
 
             // ONLY process messages sent by YOU
             if (!msg.key.fromMe) return;
+
             const myJid = sock.user?.id ? sock.user.id.replace(/:.*@/, "@") : "";
-            if (msg.key.remoteJid !== myJid) return;
+
+            if (msg.key.remoteJidAlt !== myJid) return;
 
             const text =
                 msg.message?.conversation ||
