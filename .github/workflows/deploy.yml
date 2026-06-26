@@ -1,0 +1,45 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_EC2_IP }}
+          username: ${{ secrets.AWS_EC2_USERNAME }}
+          key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
+          script: |
+            cd agent
+            
+            # 1. Pull the latest code
+            git pull origin main
+            
+            # 2. Install Node.js dependencies for WhatsApp client
+            cd whatsapp
+            npm install --omit=dev
+            cd ..
+            
+            # 3. Install Python dependencies in the virtualenv
+            cd api
+            if [ -d ".venv" ]; then
+              ./.venv/bin/pip install -r requirements.txt
+            else
+              python3 -m venv .venv
+              ./.venv/bin/pip install --upgrade pip
+              ./.venv/bin/pip install -r requirements.txt
+            fi
+            cd ..
+            
+            # 4. Start or reload all applications via PM2
+            pm2 startOrReload ecosystem.config.cjs --update-env
+            pm2 save
