@@ -4,10 +4,16 @@ from db import qdrant_client
 from qdrant_client.models import PointStruct
 import json
 import uuid
+import os
+import base64
 
 load_dotenv()
 
 client = OpenAI()
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
 
 
 def save_link(url, title, description, category):
@@ -75,6 +81,67 @@ def search_links(query):
         return str(e)
 
 
+def save_image(image_path, description, category):
+    text_to_embed = f"""
+    Description: {description}
+    Category: {category}
+    """
+    try:
+        response = client.embeddings.create(
+            input=text_to_embed,
+            model="text-embedding-3-small"
+        )
+
+        vector = response.data[0].embedding
+
+        qdrant_client.upsert(
+            collection_name="images",
+            points=[
+                PointStruct(
+                    id=str(uuid.uuid4()),
+                    vector=vector,
+                    payload={
+                        "image_path": image_path,
+                        "description": description,
+                        "category": category
+                    }
+                )
+            ]
+        )
+        return "Image saved successfully"
+    except Exception as e:
+        return str(e)
+
+
+def search_images(query):
+    try:
+        response = client.embeddings.create(
+            input=query,
+            model="text-embedding-3-small"
+        )
+
+        query_vector = response.data[0].embedding
+
+        results = qdrant_client.query_points(
+            collection_name="images",
+            query=query_vector,
+            limit=2
+        )
+        matches = []
+        for point in results.points:
+            matches.append({
+                "score": point.score,
+                "image_path": point.payload["image_path"],
+                "description": point.payload["description"],
+                "category": point.payload["category"]
+            })
+
+        return json.dumps(matches)
+
+    except Exception as e:
+        return str(e)
+
+
 TOOLS = [
     {
         "type": "function",
@@ -111,34 +178,137 @@ TOOLS = [
                 "required": ["query"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_image",
+            "description": "Save an image. If user sends an image, analyze it (if no caption) or use caption to save it.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "image_path": {"type": "string"},
+                    "description": {"type": "string"},
+                    "category": {"type": "string"}
+                },
+                "required": [
+                    "image_path",
+                    "description",
+                    "category"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_images",
+            "description": "Search saved images.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"}
+                },
+                "required": ["query"]
+            }
+        }
     }
 ]
 
 
-SYSTEM_PROMPT = """
-You are a Personal Link Memory Agent.
+SYSTEM_PROMPT = """You are a Personal Memory Agent for links and images.
 
-Use save_link to save links.
-Use search_links to retrieve links.
+Available tools:
+- save_link
+- search_links
+- save_image
+- search_images
 
-Never invent links.
-Always rely on tool results.
+Rules:
 
-If the query comes for anything other than saving or searching website links, 
-you must respond strictly with: "sorry right now i can only help you for links".
+1. Never invent links, images, titles, descriptions, or paths.
+2. Always use tool results.
+3. If the request is unrelated to saving or searching links/images, respond exactly:
+Sorry right now i can only help you for links and images
 
-When search_links returns multiple results:
+Saving:
+
+- When an image is successfully saved, respond with:
+Image saved: <title>
+
+Example:
+Image saved: evening view
+
+- Never include [SEND_IMAGE] when saving.
+- Never return image paths when saving.
+
+Searching Images:
+
+- If a matching image is found, respond ONLY with:
+[SEND_IMAGE: <exact_image_path>]
+
+Example:
+[SEND_IMAGE: E:\\agent\\whatsapp\\uploads\\1720106789.jpg]
+
+- Do not add any description.
+- Do not add any extra text.
+- Do not explain the image.
+
+Searching Links:
+
+- Return only the most relevant link unless multiple results are genuinely ambiguous.
+- If no result exists, clearly say so.
+
+Multiple Results:
+
 - Consider title, description, category, score, and user intent.
 - Do not choose solely based on score.
-- The highest score is not always the correct result.
-- Prefer the result that best matches the user's request.
-- Return a single link when one result is clearly the best match.
-- Return multiple links only when there is genuine ambiguity.
-- If no relevant result exists, clearly say so.
-"""
+- Prefer the result that best matches the request.
+
+If no relevant image or link exists, clearly say so."""
 
 
 def process_message(user_message: str) -> str:
+    image_path = None
+    caption = ""
+    
+    if "[IMAGE_PATH]:" in user_message:
+        lines = user_message.split("\n")
+        for line in lines:
+            if line.startswith("[IMAGE_PATH]:"):
+                image_path = line.replace("[IMAGE_PATH]:", "").strip()
+            elif line.startswith("[CAPTION]:"):
+                caption = line.replace("[CAPTION]:", "").strip()
+        
+        if caption:
+            user_prompt = f"""
+            Image path: {image_path}
+            User caption: {caption} 
+            Use the exact image path provided above."""
+        else:
+            user_prompt = f"""
+            Image_path: {image_path}
+            Save this image. It has no caption, 
+            so Analyze the image and create a short description (5-10 words).
+            Do not describe the image in detail.
+            Use the exact image path provided above."""
+    else:
+        user_prompt = user_message
+
+    user_content = [{"type": "text", "text": user_prompt}]
+    
+    if image_path and os.path.exists(image_path):
+        try:
+            base64_image = encode_image(image_path)
+            user_content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{base64_image}"
+                }
+            })
+        except Exception as e:
+            print(f"Error encoding image: {e}")
+
     messages = [
         {
             "role": "system",
@@ -146,7 +316,7 @@ def process_message(user_message: str) -> str:
         },
         {
             "role": "user",
-            "content": user_message
+            "content": user_content
         }
     ]
 
@@ -185,6 +355,18 @@ def process_message(user_message: str) -> str:
                     args["query"]
                 )
 
+            elif name == "save_image":
+                result = save_image(
+                    args["image_path"],
+                    args["description"],
+                    args["category"]
+                )
+
+            elif name == "search_images":
+                result = search_images(
+                    args["query"]
+                )
+
             else:
                 result = "Unknown tool"
 
@@ -201,7 +383,7 @@ def process_message(user_message: str) -> str:
                 tools=TOOLS
             )
         )
-
+        print("final response", final_response)
         return (
             final_response
             .choices[0]
