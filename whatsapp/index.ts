@@ -1,4 +1,4 @@
-import getMsg from "./getMsg.js";
+import getMsg, { IncomingMessage } from "./getMsg.js";
 import fs from "fs";
 import {
   makeWASocket,
@@ -6,7 +6,7 @@ import {
 } from "baileys";
 import QRCode from "qrcode";
 
-async function askAgent(text: string): Promise<string> {
+async function askAgent(msgPayload: IncomingMessage): Promise<string> {
   try {
     const response = await fetch("http://127.0.0.1:8000/chat", {
       method: "POST",
@@ -14,7 +14,7 @@ async function askAgent(text: string): Promise<string> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: text,
+        message: msgPayload,
       }),
     });
 
@@ -79,16 +79,17 @@ async function connect(): Promise<void> {
 
       if ((msg.key as any).remoteJidAlt !== myJid) return;
 
-      const text = await getMsg(msg, sock);
+      const msgResponse = await getMsg(msg, sock);
       
-      if (!text || !text.trim()) return;
+      if (!msgResponse) return;
+      if (msgResponse.type === "text" && (!msgResponse.content || !msgResponse.content.trim())) return;
 
-      console.log("📩 Command:", text);
+      console.log("📩 Command Payload:", JSON.stringify(msgResponse));
 
       const chatId = msg.key.remoteJid;
       if (!chatId) return;
 
-      const response = await askAgent(text);
+      const response = await askAgent(msgResponse);
 
       // sending response back to user 
       const imageRegex = /\[SEND_IMAGE:\s*(.*?)\]/i;
