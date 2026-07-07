@@ -24,9 +24,10 @@ jobs:
             # 1. Pull the latest code
             git pull origin main
             
-            # 2. Install Node.js dependencies for WhatsApp client
+            # 2. Install dependencies & build WhatsApp client
             cd whatsapp
-            npm install --omit=dev
+            npm install
+            npm run build
             cd ..
             
             # 3. Install Python dependencies in the virtualenv

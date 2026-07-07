@@ -1,14 +1,12 @@
 import getMsg from "./getMsg.js";
 import fs from "fs";
-
 import {
   makeWASocket,
-  useMultiFileAuthState,
+  useMultiFileAuthState
 } from "baileys";
-
 import QRCode from "qrcode";
 
-async function askAgent(text) {
+async function askAgent(text: string): Promise<string> {
   try {
     const response = await fetch("http://127.0.0.1:8000/chat", {
       method: "POST",
@@ -24,7 +22,7 @@ async function askAgent(text) {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as { response: string };
 
     return data.response;
   } catch (error) {
@@ -34,7 +32,7 @@ async function askAgent(text) {
   }
 }
 
-async function connect() {
+async function connect(): Promise<void> {
   const { state, saveCreds } = await useMultiFileAuthState("auth");
 
   const sock = makeWASocket({
@@ -79,15 +77,16 @@ async function connect() {
 
       const myJid = sock.user?.id ? sock.user.id.replace(/:.*@/, "@") : "";
 
-      if (msg.key.remoteJidAlt !== myJid) return;
+      if ((msg.key as any).remoteJidAlt !== myJid) return;
 
-      const text = await getMsg(msg, sock)
+      const text = await getMsg(msg, sock);
       
-      if (!text.trim()) return;
+      if (!text || !text.trim()) return;
 
       console.log("📩 Command:", text);
 
       const chatId = msg.key.remoteJid;
+      if (!chatId) return;
 
       const response = await askAgent(text);
 

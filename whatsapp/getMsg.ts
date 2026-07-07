@@ -2,9 +2,13 @@ import fs from "fs";
 import path from "path";
 import {
   downloadMediaMessage,
+  proto,
+  makeWASocket
 } from "baileys";
 
-export default async function getMsg(msg, sock) {
+type WASocket = ReturnType<typeof makeWASocket>;
+
+export default async function getMsg(msg: proto.IWebMessageInfo, sock: WASocket): Promise<string | undefined> {
     if (msg.message?.conversation || msg.message?.extendedTextMessage) {
         const text =
           msg.message?.conversation ||
@@ -13,14 +17,14 @@ export default async function getMsg(msg, sock) {
           return text;
       } else if (msg.message?.imageMessage) {
         const buffer = await downloadMediaMessage(
-          msg,
+          msg as any,
           "buffer",
           {},
           {
-            logger: console,
+            logger: console as any,
             reuploadRequest: sock.updateMediaMessage,
           },
-        );
+        ) as Buffer;
 
         const filename = `${Date.now()}.jpg`;
         const filepath = path.join("uploads", filename);
@@ -36,5 +40,6 @@ export default async function getMsg(msg, sock) {
         const absolutePath = path.resolve(filepath);
         const caption = msg.message.imageMessage.caption || "";
         return `[IMAGE_PATH]: ${absolutePath}\n[CAPTION]: ${caption}`;
-      }
+      } 
+      return undefined;
 }

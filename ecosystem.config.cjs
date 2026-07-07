@@ -13,7 +13,7 @@ module.exports = {
     {
       name: "agent-whatsapp",
       cwd: "./whatsapp",
-      script: "index.js",
+      script: "dist/index.js",
       interpreter: "node",
       env: {
         NODE_ENV: "production"
