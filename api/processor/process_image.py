@@ -9,7 +9,7 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 
-def process_image(path: Optional[str], caption: Optional[str], mime_type: Optional[str]) -> IncomingMessage:
+def process_image(path, caption: Optional[str], mime_type: Optional[str]) -> IncomingMessage:
     if caption:
         return IncomingMessage(
             type="image",
@@ -53,6 +53,12 @@ def process_image(path: Optional[str], caption: Optional[str], mime_type: Option
                 )
             except Exception as e:
                 print(f"Error encoding/analyzing image: {e}")
+                return IncomingMessage(
+                    type="image",
+                    path=path,
+                    caption=f"[Image Analysis Error]: {str(e)}",
+                    mime_type=mime_type,
+                )
         
         return IncomingMessage(
             type="image",

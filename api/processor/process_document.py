@@ -27,7 +27,7 @@ def process_document(path: Optional[str], caption: Optional[str], mime_type: Opt
 
     # 3. Check if the document is actually an Audio file (e.g. audio/mpeg, audio/ogg, etc.)
     elif mime.startswith("audio/") or ext in {".mp3", ".ogg", ".wav", ".m4a", ".aac", ".amr", ".opus"}:
-        return process_audio(path, caption, mime_type)
+        return process_audio(path, mime_type)
 
     # 4. Check if the document is actually a Video (e.g. video/mp4, video/quicktime, etc.)
     elif mime.startswith("video/") or ext in {".mp4", ".mov", ".avi", ".mkv", ".3gp", ".webm"}:
