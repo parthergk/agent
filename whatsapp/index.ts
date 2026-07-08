@@ -82,7 +82,7 @@ async function connect(): Promise<void> {
       const msgResponse = await getMsg(msg, sock);
       
       if (!msgResponse) return;
-      if (msgResponse.type === "text" && (!msgResponse.content || !msgResponse.content.trim())) return;
+      if (msgResponse.type === "text" && (!msgResponse.caption || !msgResponse.caption.trim())) return;
 
       console.log("📩 Command Payload:", JSON.stringify(msgResponse));
 

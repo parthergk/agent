@@ -17,10 +17,8 @@ client = OpenAI()
 
 class IncomingMessage(BaseModel):
     type: Literal["text", "image", "audio", "video", "document"]
-    content: Optional[str] = None
     path: Optional[str] = None
     caption: Optional[str] = None
-    filename: Optional[str] = None
     mime_type: Optional[str] = None
 
 def encode_image(image_path):

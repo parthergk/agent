@@ -8,10 +8,8 @@ type WASocket = ReturnType<typeof makeWASocket>;
 
 export interface IncomingMessage {
   type: "text" | "image" | "audio" | "video" | "document";
-  content?: string;
   path?: string;
   caption?: string;
-  filename?: string;
   mime_type?: string;
 }
 
@@ -52,7 +50,6 @@ export default async function getMsg(
     return {
       type: "document",
       path: absolutePath,
-      filename: fileName,
       mime_type: mimetype,
       caption: caption || undefined,
     };
