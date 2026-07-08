@@ -6,7 +6,6 @@ def process_video(path: Optional[str], caption: Optional[str], mime_type: Option
     return IncomingMessage(
         type="video",
         path=path,
-        caption=caption,
-        mime_type=mime_type,
-        content="[Video Processed Placeholder]"
+        caption=caption or "[Video Processed Placeholder]",
+        mime_type=mime_type
     )

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from agent import process_message, IncomingMessage
-from preprocessor import preprocess_message
+from processors import preprocess_message
 
 app = FastAPI()
 

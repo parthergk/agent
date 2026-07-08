@@ -3,18 +3,17 @@ from typing import Optional
 from agent import IncomingMessage
 
 # Import other processors for routing when a media file is sent as a document
-from processor.process_image import process_image
-from processor.process_audio import process_audio
-from processor.process_video import process_video
+from .image import process_image
+from .audio import process_audio
+from .video import process_video
 
 def process_document(path: Optional[str], caption: Optional[str], mime_type: Optional[str]) -> IncomingMessage:
     if not path:
         return IncomingMessage(
             type="document",
             path=path,
-            caption=caption,
-            mime_type=mime_type,
-            content="[Document: No file path provided]"
+            caption=caption or "[Document: No file path provided]",
+            mime_type=mime_type
         )
 
     # 1. Determine type by MIME-type and file extension
@@ -42,55 +41,45 @@ def process_document(path: Optional[str], caption: Optional[str], mime_type: Opt
             return IncomingMessage(
                 type="document",
                 path=path,
-                caption=caption,
-                mime_type=mime_type,
-                content=f"Here is the content of the document ({filename}):\n<document name=\"{filename}\">\n{content_text}\n</document>"
+                caption=caption or f"Here is the content of the document ({filename}):\n<document name=\"{filename}\">\n{content_text}\n</document>",
+                mime_type=mime_type
             )
         except Exception as e:
             return IncomingMessage(
                 type="document",
                 path=path,
-                caption=caption,
-                mime_type=mime_type,
-                content=f"[Error reading text document: {str(e)}]"
+                caption=caption or f"[Error reading text document: {str(e)}]",
+                mime_type=mime_type
             )
 
     # 6. Stub routing for Office files and Archives
     elif ext == ".pdf":
-        # TODO: Implement PDF parsing (e.g. using pypdf/pdfplumber)
         return IncomingMessage(
             type="document",
             path=path,
-            caption=caption,
-            mime_type=mime_type,
-            content="[PDF Text Extraction Placeholder]"
+            caption=caption or "[PDF Text Extraction Placeholder]",
+            mime_type=mime_type
         )
     elif ext in {".docx", ".doc"}:
-        # TODO: Implement Word doc parsing (e.g. using python-docx)
         return IncomingMessage(
             type="document",
             path=path,
-            caption=caption,
-            mime_type=mime_type,
-            content="[Word Document Text Extraction Placeholder]"
+            caption=caption or "[Word Document Text Extraction Placeholder]",
+            mime_type=mime_type
         )
     elif ext in {".xlsx", ".xls"}:
-        # TODO: Implement Excel parsing (e.g. using pandas / openpyxl)
         return IncomingMessage(
             type="document",
             path=path,
-            caption=caption,
-            mime_type=mime_type,
-            content="[Excel Spreadsheet Data Extraction Placeholder]"
+            caption=caption or "[Excel Spreadsheet Data Extraction Placeholder]",
+            mime_type=mime_type
         )
     elif ext in {".zip", ".rar", ".tar", ".gz"}:
-        # TODO: Implement Archive extraction and index parsing
         return IncomingMessage(
             type="document",
             path=path,
-            caption=caption,
-            mime_type=mime_type,
-            content="[Archive Index/Structure Placeholder]"
+            caption=caption or "[Archive Index/Structure Placeholder]",
+            mime_type=mime_type
         )
 
     # 7. Fallback for unsupported binary formats
@@ -98,7 +87,6 @@ def process_document(path: Optional[str], caption: Optional[str], mime_type: Opt
     return IncomingMessage(
         type="document",
         path=path,
-        caption=caption,
-        mime_type=mime_type,
-        content=f"[Document: Unsupported file format ({ext}) for file {filename}]"
+        caption=caption or f"[Document: Unsupported file format ({ext}) for file {filename}]",
+        mime_type=mime_type
     )

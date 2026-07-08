@@ -1,5 +1,11 @@
-from db import qdrant_client
+import os
+import sys
 from qdrant_client.models import VectorParams, Distance, PayloadSchemaType
+
+# Add parent directory to system path to allow absolute imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from db.client import qdrant_client
 
 # Recreate collection
 try:

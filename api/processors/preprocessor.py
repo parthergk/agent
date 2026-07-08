@@ -1,8 +1,8 @@
 from agent import IncomingMessage
-from processor.process_image import process_image
-from processor.process_audio import process_audio
-from processor.process_video import process_video
-from processor.process_document import process_document
+from .image import process_image
+from .audio import process_audio
+from .video import process_video
+from .document import process_document
 
 def preprocess_message(message: IncomingMessage) -> IncomingMessage:
     if message.type == "text":
