@@ -7,6 +7,7 @@ import uuid
 import os
 import base64
 
+
 from pydantic import BaseModel
 from typing import Optional, Literal
 
@@ -22,10 +23,10 @@ class IncomingMessage(BaseModel):
     mime_type: Optional[str] = None
     content: Optional[str] = None
 
+
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
-
 
 def save_link(url, title, description, category):
     text_to_embed = f"""
@@ -286,19 +287,10 @@ def process_message(message: IncomingMessage) -> str:
     if message.type == "image":
         image_path = message.path
         caption = message.caption or ""
-        
-        if caption:
-            user_prompt = f"""
-            Image path: {image_path}
-            User caption: {caption} 
-            Use the exact image path provided above."""
-        else:
-            user_prompt = f"""
-            Image_path: {image_path}
-            Save this image. It has no caption, 
-            so Analyze the image and create a short description (5-10 words).
-            Do not describe the image in detail.
-            Use the exact image path provided above."""
+        user_prompt = f"""
+        Image path: {image_path}
+        User caption: {caption} 
+        Use the exact image path provided above."""
     else:
         user_prompt = message.caption or message.content or ""
 
