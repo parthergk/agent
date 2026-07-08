@@ -26,7 +26,7 @@ export default async function getMsg(
       "";
     return {
       type: "text",
-      content: text,
+      caption: text,
     };
   } else if (msg.message?.imageMessage) {
     const img = msg.message.imageMessage;

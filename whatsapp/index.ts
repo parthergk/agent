@@ -19,7 +19,7 @@ async function askAgent(msgPayload: IncomingMessage): Promise<string> {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`${response} HTTP: ${response.status}`);
     }
 
     const data = await response.json() as { response: string };

@@ -1,16 +1,17 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from agent import process_message
+from agent import process_message, IncomingMessage
 
 app = FastAPI()
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: IncomingMessage
 
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
+    print("Payload", request.message)
 
     response = process_message(
         request.message
@@ -18,4 +19,4 @@ async def chat(request: ChatRequest):
 
     return {
         "response": response
-    }
+    }

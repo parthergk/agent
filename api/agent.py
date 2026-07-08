@@ -7,9 +7,21 @@ import uuid
 import os
 import base64
 
+from pydantic import BaseModel
+from typing import Optional, Literal
+
 load_dotenv()
 
 client = OpenAI()
+
+
+class IncomingMessage(BaseModel):
+    type: Literal["text", "image", "audio", "video", "document"]
+    content: Optional[str] = None
+    path: Optional[str] = None
+    caption: Optional[str] = None
+    filename: Optional[str] = None
+    mime_type: Optional[str] = None
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -268,17 +280,13 @@ Multiple Results:
 If no relevant image or link exists, clearly say so."""
 
 
-def process_message(user_message: str) -> str:
+def process_message(message: IncomingMessage) -> str:
     image_path = None
     caption = ""
     
-    if "[IMAGE_PATH]:" in user_message:
-        lines = user_message.split("\n")
-        for line in lines:
-            if line.startswith("[IMAGE_PATH]:"):
-                image_path = line.replace("[IMAGE_PATH]:", "").strip()
-            elif line.startswith("[CAPTION]:"):
-                caption = line.replace("[CAPTION]:", "").strip()
+    if message.type == "image":
+        image_path = message.path
+        caption = message.caption or ""
         
         if caption:
             user_prompt = f"""
@@ -293,7 +301,7 @@ def process_message(user_message: str) -> str:
             Do not describe the image in detail.
             Use the exact image path provided above."""
     else:
-        user_prompt = user_message
+        user_prompt = message.caption or message.content or ""
 
     user_content = [{"type": "text", "text": user_prompt}]
     
