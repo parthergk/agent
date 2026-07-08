@@ -20,6 +20,7 @@ class IncomingMessage(BaseModel):
     path: Optional[str] = None
     caption: Optional[str] = None
     mime_type: Optional[str] = None
+    content: Optional[str] = None
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
