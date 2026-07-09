@@ -61,5 +61,26 @@ TOOLS = [
                 "required": ["query"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_reminder",
+            "description": "Create a reminder for the user with a specific task and date/time.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task": {
+                        "type": "string",
+                        "description": "The description of the task to be reminded of."
+                    },
+                    "remind_at": {
+                        "type": "string",
+                        "description": "The date and time when the reminder should trigger, formatted as an ISO 8601 string (YYYY-MM-DDTHH:MM:SS), resolved relative to the current local time."
+                    }
+                },
+                "required": ["task", "remind_at"]
+            }
+        }
     }
 ]

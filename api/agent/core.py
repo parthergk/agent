@@ -1,9 +1,11 @@
 import json
+import datetime
 from openai import OpenAI
 from .models import IncomingMessage, AgentResponse
 from .prompts import SYSTEM_PROMPT
 from .tools import TOOLS
 from .memory_store import save_memory, search_memory
+from .reminder import create_reminder
 
 client = OpenAI()
 
@@ -11,6 +13,8 @@ def process_message(message: IncomingMessage) -> str:
     """
     Main entry point for handling incoming messages from the FastAPI app.
     """
+    current_time = datetime.datetime.now().astimezone().isoformat(timespec='seconds')
+
     # Format incoming message context into a user prompt
     if message.type == "text":
         user_content = message.caption or ""
@@ -23,9 +27,11 @@ def process_message(message: IncomingMessage) -> str:
         user_content = "\n".join(parts)
         print("\n\nuser content", user_content)
 
+    user_content_with_time = f"Current Time: {current_time}\nUser Message: {user_content}"
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_content}
+        {"role": "user", "content": user_content_with_time}
     ]
 
     try:
@@ -55,6 +61,11 @@ def process_message(message: IncomingMessage) -> str:
                 result = search_memory(
                     query=args.get("query"),
                     memory_type=args.get("memory_type")
+                )
+            elif name == "create_reminder":
+                result = create_reminder(
+                    task=args.get("task"),
+                    remind_at=args.get("remind_at")
                 )
             else:
                 result = f"Unknown tool: {name}"
