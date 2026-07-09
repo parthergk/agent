@@ -68,11 +68,12 @@ def process_message(message: IncomingMessage) -> str:
         final_response = client.chat.completions.parse(
             model="gpt-5-mini",
             messages=messages,
-            tools=TOOLS,
+            # tools=TOOLS,
             response_format= AgentResponse
         )
-        print("final response", final_response.choices[0].message.content)
-        return final_response.choices[0].message.content or ""
+        parsed_response = final_response.choices[0].message.parsed
+        print("final response", parsed_response)
+        return parsed_response or ""
         
     except Exception as e:
         print(f"Error processing message: {e}")

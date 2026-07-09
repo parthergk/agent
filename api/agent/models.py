@@ -9,6 +9,12 @@ class IncomingMessage(BaseModel):
 
 
 class AgentResponse(BaseModel):
-    tyep: str
+    type: Literal[
+        "text",
+        "image",
+        "document",
+        "video",
+        "not_found"
+    ]
     message: str | None
     path: str | None
