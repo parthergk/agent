@@ -1,6 +1,6 @@
 import json
 from openai import OpenAI
-from .models import IncomingMessage
+from .models import IncomingMessage, AgentResponse
 from .prompts import SYSTEM_PROMPT
 from .tools import TOOLS
 from .memory_store import save_memory, search_memory
@@ -15,12 +15,13 @@ def process_message(message: IncomingMessage) -> str:
     if message.type == "text":
         user_content = message.caption or ""
     else:
-        parts = [f"User uploaded a {message.type}."]
+        parts = [f"Type: {message.type}"]
         if message.path:
             parts.append(f"File Path: {message.path}")
         if message.caption:
-            parts.append(f"Caption/Description: {message.caption}")
+            parts.append(f"Caption: {message.caption}")
         user_content = "\n".join(parts)
+        print("\n\nuser content", user_content)
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -36,7 +37,7 @@ def process_message(message: IncomingMessage) -> str:
 
         assistant_msg = response.choices[0].message
         messages.append(assistant_msg)
-
+        print("\n\nassistant msg", assistant_msg)
         if not assistant_msg.tool_calls:
             return assistant_msg.content or ""
 
@@ -64,11 +65,13 @@ def process_message(message: IncomingMessage) -> str:
                 "content": result
             })
 
-        final_response = client.chat.completions.create(
+        final_response = client.chat.completions.parse(
             model="gpt-5-mini",
             messages=messages,
-            tools=TOOLS
+            tools=TOOLS,
+            response_format= AgentResponse
         )
+        print("final response", final_response.choices[0].message.content)
         return final_response.choices[0].message.content or ""
         
     except Exception as e:

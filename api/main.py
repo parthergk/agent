@@ -14,6 +14,7 @@ class ChatRequest(BaseModel):
 async def chat(request: ChatRequest):
 
     preprocess_response = preprocess_message(request.message)
+    print("\n\npreprocess response", preprocess_response)
     response = process_message(preprocess_response)
 
     return {

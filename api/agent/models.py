@@ -6,3 +6,9 @@ class IncomingMessage(BaseModel):
     path: Optional[str] = None
     caption: Optional[str] = None
     mime_type: Optional[str] = None
+
+
+class AgentResponse(BaseModel):
+    tyep: str
+    message: str | None
+    path: str | None
