@@ -6,7 +6,7 @@ import {
 } from "baileys";
 import QRCode from "qrcode";
 
-async function askAgent(msgPayload: IncomingMessage): Promise<string> {
+async function askAgent(msgPayload: IncomingMessage): Promise<{type: string, message: string, path: string}> {
   try {
     const response = await fetch("http://127.0.0.1:8000/chat", {
       method: "POST",
@@ -22,13 +22,13 @@ async function askAgent(msgPayload: IncomingMessage): Promise<string> {
       throw new Error(`${response} HTTP: ${response.status}`);
     }
 
-    const data = await response.json() as { response: string };
+    const data = await response.json() as { response: {type: string, message: string, path: string} };
 
     return data.response;
   } catch (error) {
     console.error(error);
 
-    return "Agent is currently unavailable.";
+    return {type: "text", message: "Agent is currently unavailable.", path: ""};
   }
 }
 
@@ -90,30 +90,31 @@ async function connect(): Promise<void> {
       if (!chatId) return;
 
       const response = await askAgent(msgResponse);
-
-      // sending response back to user 
-      const imageRegex = /\[SEND_IMAGE:\s*(.*?)\]/i;
-      const match = response.match(imageRegex);
       
-      if (match) {
-        const imagePath = match[1].trim();
-        console.log("Image path: ", imagePath);
-        
-        const cleanText = response.replace(imageRegex, "").trim();
+      // sending response back to user       
+      if (response.type === "image") {
+        const imagePath = response.path;
+        const cleanText = response.message;
         
         if (fs.existsSync(imagePath)) {
           await sock.sendMessage(chatId, {
             image: { url: imagePath },
             caption: cleanText || undefined
           });
+        } 
+      } else if (response.type === "video") {
+          const videoPath = response.path;
+          const cleanText = response.message;
+
+          if (fs.existsSync(videoPath)) {
+            await sock.sendMessage(chatId, {
+              video: {url: videoPath},
+              caption: cleanText || undefined
+            })
+          }
         } else {
           await sock.sendMessage(chatId, {
-            text: `Image file not found at path: ${imagePath}\n\n${response}`,
-          });
-        }
-      } else {
-        await sock.sendMessage(chatId, {
-          text: response,
+            text: response.message,
         });
       }
     } catch (error) {
