@@ -1,1 +1,1 @@
-Generate the login image
+Start the all pm2 process
