@@ -45,8 +45,7 @@ async function connect() {
   sock.ev.on("creds.update", saveCreds);
 
   sock.ev.on("connection.update", async (update) => {
-  console.log("UPDATE:", JSON.stringify(update, null, 2));
-
+  
   const { connection, lastDisconnect, qr } = update;
 
   if (qr) {
