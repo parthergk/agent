@@ -45,25 +45,27 @@ async function connect() {
   sock.ev.on("creds.update", saveCreds);
 
   sock.ev.on("connection.update", async (update) => {
-    const { connection, lastDisconnect, qr } = update;
+  console.log("UPDATE:", JSON.stringify(update, null, 2));
 
-    if (qr) {
-      await QRCode.toFile("qr.png", qr);
-      console.log("📱 Scan qr.png");
-    }
+  const { connection, lastDisconnect, qr } = update;
 
-    if (connection === "open") {
-      console.log("✅ WhatsApp Connected");
-    }
+  if (qr) {
+    console.log("QR RECEIVED");
 
-    if (connection === "close") {
-      console.log("❌ Disconnected");
-      console.log(lastDisconnect);
+    await QRCode.toFile("qr.png", qr);
 
-      // reconnect
-      connect();
-    }
-  });
+    console.log("QR SAVED");
+  }
+
+  if (connection === "open") {
+    console.log("Connected");
+  }
+
+  if (connection === "close") {
+    console.log("Closed");
+    console.log(lastDisconnect);
+  }
+});
 
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     try {
